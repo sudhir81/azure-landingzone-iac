@@ -1,0 +1,12 @@
+# Terraform local state & cache
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Terraform plans
+*.tfplan
+
+# OS & editor junk
+.DS_Store
+
