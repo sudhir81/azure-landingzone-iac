@@ -1,0 +1,60 @@
+name: 🚀 Terraform Landing Zone Deployment
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # ✅ Manual trigger from Actions tab
+
+env:
+  TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    name: 🚀 Terraform Plan & Apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧰 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🧰 Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+
+      - name: 🔐 Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: 📦 Terraform Init
+        working-directory: .
+        run: terraform init -backend-config=backend.hcl
+
+      - name: 🧪 Terraform Validate
+        working-directory: .
+        run: terraform validate
+
+      - name: 🧪 Terraform Plan
+        working-directory: .
+        run: terraform plan -out=tfplan
+
+      - name: ✅ Terraform Apply (Manual Approval)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: .
+        run: terraform apply -auto-approve tfplan
+
